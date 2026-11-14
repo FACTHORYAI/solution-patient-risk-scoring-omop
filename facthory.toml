@@ -1,0 +1,157 @@
+[solution]
+id = "com.facthory.patient_risk_scoring_omop"
+title = "Patient Risk Scoring (OMOP)"
+version = "0.1.0"
+contract = "0-draft"
+licence = "Apache-2.0"
+health_related = true
+
+# Sample tables. All synthetic, generated for this repository (CC0-1.0); see data/README.md.
+[[dataset]]
+name = "person"
+path = "data/sample/person.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "condition_occurrence"
+path = "data/sample/condition_occurrence.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "concept_ancestor"
+path = "data/sample/concept_ancestor.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "visit_occurrence"
+path = "data/sample/visit_occurrence.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "condition_era"
+path = "data/sample/condition_era.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "drug_exposure"
+path = "data/sample/drug_exposure.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "concept"
+path = "data/sample/concept.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "target_cohort"
+path = "data/sample/target_cohort.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "outcomes"
+path = "data/sample/outcomes.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "person_features"
+path = "data/sample/person_features.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "training_data"
+path = "data/sample/training_data.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "model_metrics"
+path = "data/sample/model_metrics.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "feature_importance"
+path = "data/sample/feature_importance.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "model_predictions"
+path = "data/sample/model_predictions.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "risk_bands"
+path = "data/sample/risk_bands.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+[[dataset]]
+name = "top_comorbidities"
+path = "data/sample/top_comorbidities.parquet"
+synthetic = true
+licence = "CC0-1.0"
+
+# Cohort and feature build-up, following the OHDSI patient-level prediction design.
+[[job]]
+name = "build_target_cohort"
+entry = "patient_risk_scoring_omop.jobs.build_target_cohort:run"
+mode = "call"
+inputs = ["person", "condition_occurrence", "concept_ancestor", "visit_occurrence"]
+outputs = ["target_cohort"]
+
+[[job]]
+name = "build_outcomes"
+entry = "patient_risk_scoring_omop.jobs.build_outcomes:run"
+mode = "call"
+inputs = ["target_cohort", "visit_occurrence"]
+outputs = ["outcomes"]
+
+[[job]]
+name = "build_features"
+entry = "patient_risk_scoring_omop.jobs.build_features:run"
+mode = "call"
+inputs = ["target_cohort", "person", "condition_era", "drug_exposure", "visit_occurrence"]
+outputs = ["person_features"]
+
+[[job]]
+name = "build_training_data"
+entry = "patient_risk_scoring_omop.jobs.build_training_data:run"
+mode = "call"
+inputs = ["target_cohort", "outcomes", "person_features"]
+outputs = ["training_data"]
+
+[[job]]
+name = "train_risk_model"
+entry = "patient_risk_scoring_omop.jobs.train_risk_model:run"
+mode = "job"
+inputs = ["training_data"]
+outputs = ["model_metrics", "feature_importance", "model_predictions"]
+
+[[job]]
+name = "risk_summary"
+entry = "patient_risk_scoring_omop.jobs.risk_summary:run"
+mode = "call"
+inputs = ["model_predictions"]
+outputs = ["risk_bands"]
+
+[[job]]
+name = "top_comorbidities"
+entry = "patient_risk_scoring_omop.jobs.top_comorbidities:run"
+mode = "call"
+inputs = ["condition_era", "target_cohort", "concept"]
+outputs = ["top_comorbidities"]
+
+[skill]
+instructions = "skills/patient_risk_scoring_omop.md"
