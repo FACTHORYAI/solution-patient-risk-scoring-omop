@@ -4,7 +4,7 @@ Score patient risk from OMOP condition history.
 
 ## Start here
 
-1. Look at the sample tables in `data/sample`: a synthetic OMOP 5.3 extract of 240 persons, and the derived cohort, feature and model tables.
+1. Look at the sample tables in `data/sample`: an invented OMOP 5.3 extract of 900 persons (650 in the cohort), made by `data/generate_sample.py`, and the derived cohort, feature and model tables.
 2. Follow the OHDSI patient-level prediction design: `build_target_cohort` indexes members at their first heart-failure diagnosis, `build_outcomes` finds emergency-room visits in the risk window, `build_features` measures history before the index date, and `build_training_data` joins them.
 3. Train and read the model:
 
@@ -23,5 +23,5 @@ Named measures for the outcome rate and the test ROC AUC live in `metrics/`.
 ## Notes
 
 - The sample data is synthetic; real patient data never enters this project.
-- The risk model is a logistic regression: it shows association, not causation.
+- The risk model is a logistic regression: it shows association, not causation. Race is left out of the model by default. The sample has a signal built in, so its performance says nothing about any real population.
 - Results are for research and analytics, not clinical decisions.

@@ -24,6 +24,7 @@ from patient_risk_scoring_omop.schemas import FEATURE_IMPORTANCE, MODEL_METRICS,
 INPUTS = ("training_data",)
 OUTPUTS = ("model_metrics", "feature_importance", "model_predictions")
 
+# Every column of training_data that can be a model feature.
 FEATURES = (
     "age_in_days",
     "gender_concept_id",
@@ -34,7 +35,13 @@ FEATURES = (
     "comorbidity_occurrences",
     "prior_er_visits",
 )
+RACE_FEATURE = "race_concept_id"
 MINIMUM_ROWS = 30
+
+
+def model_features(include_race: bool) -> tuple[str, ...]:
+    """The features the model is trained on; race is left out unless asked for."""
+    return FEATURES if include_race else tuple(name for name in FEATURES if name != RACE_FEATURE)
 
 
 @dataclass(frozen=True)
@@ -46,18 +53,24 @@ class Params:
     random_state: int = 42
     max_iter: int = 1000
     threshold: float = 0.5
+    include_race: bool = False
 
 
 def run(inputs: dict[str, pa.Table], params: Params) -> dict[str, pa.Table]:
-    """Return per-split metrics, the model coefficients and the per-person predictions."""
+    """Return per-split metrics, the model coefficients and the per-person predictions.
+
+    Race (`race_concept_id`) stays in `training_data` so a fairness check is possible, but it is
+    not a model feature unless `include_race` is true.
+    """
     rows = inputs["training_data"].to_pylist()
     _check_params(params)
+    names = model_features(params.include_race)
     if len(rows) < MINIMUM_ROWS:
         message = (
             f"training_data has {len(rows)} rows; train_risk_model needs at least {MINIMUM_ROWS}"
         )
         raise ValueError(message)
-    features = np.array([[float(row[name]) for name in FEATURES] for row in rows])
+    features = np.array([[float(row[name]) for name in names] for row in rows])
     outcomes = np.array([int(row["outcome"]) for row in rows])
     subject_ids = np.array([row["subject_id"] for row in rows])
     if len(set(outcomes.tolist())) < 2:
@@ -144,7 +157,7 @@ def run(inputs: dict[str, pa.Table], params: Params) -> dict[str, pa.Table]:
             "coefficient": float(coefficient),
             "odds_ratio": float(np.exp(coefficient)),
         }
-        for name, coefficient in zip(FEATURES, coefficients, strict=True)
+        for name, coefficient in zip(names, coefficients, strict=True)
     ]
     importance_rows.sort(key=lambda row: abs(row["coefficient"]), reverse=True)
     for rank, row in enumerate(importance_rows, start=1):
