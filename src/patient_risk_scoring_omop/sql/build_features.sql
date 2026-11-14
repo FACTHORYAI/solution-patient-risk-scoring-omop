@@ -1,5 +1,6 @@
 -- Person-level features: demographics, drug exposure history, condition history and
--- prior emergency-room use, measured before the cohort start date.
+-- prior emergency-room use, measured before the index date (cohort_end_date) and, for
+-- the drug and condition history, within $lookback_days of it.
 WITH cohort AS (
     SELECT subject_id, cohort_start_date, cohort_end_date FROM target_cohort
 ),
@@ -18,8 +19,8 @@ condition_history AS (
            sum(ce.condition_occurrence_count) AS comorbidity_occurrences
     FROM cohort AS c
     JOIN condition_era AS ce ON ce.person_id = c.subject_id
-    WHERE ce.condition_era_start_date >= c.cohort_start_date - to_days($lookback_days)
-      AND ce.condition_era_start_date <= c.cohort_start_date
+    WHERE ce.condition_era_start_date >= c.cohort_end_date - to_days($lookback_days)
+      AND ce.condition_era_start_date < c.cohort_end_date
     GROUP BY c.subject_id
 ),
 drug_history AS (
@@ -31,8 +32,8 @@ drug_history AS (
     FROM cohort AS c
     JOIN drug_exposure AS de ON de.person_id = c.subject_id
     WHERE de.drug_concept_id IN ($drug1_concept_id, $drug2_concept_id)
-      AND de.drug_exposure_start_date >= c.cohort_start_date - to_days($lookback_days)
-      AND de.drug_exposure_start_date <= c.cohort_end_date
+      AND de.drug_exposure_start_date >= c.cohort_end_date - to_days($lookback_days)
+      AND de.drug_exposure_start_date < c.cohort_end_date
     GROUP BY c.subject_id
 ),
 prior_emergency AS (

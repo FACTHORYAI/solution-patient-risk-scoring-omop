@@ -26,6 +26,6 @@ SELECT eo.person_id AS subject_id,
 FROM earliest_onset AS eo
 JOIN observation AS obs
     ON obs.person_id = eo.person_id
-WHERE eo.condition_start_date > obs.observation_start - to_days($min_observation_period)
+WHERE eo.condition_start_date >= obs.observation_start + to_days($min_observation_period)
   AND eo.condition_start_date + to_days($max_time_at_risk) < obs.observation_end
 ORDER BY subject_id
