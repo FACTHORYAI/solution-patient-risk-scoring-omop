@@ -23,13 +23,27 @@ Predict a patient's risk of an outcome from condition, medication and encounter 
 - Its results are tables and pages in your workspace, so you can query them, chart them and ask the agent about them, inside your permissions.
 - Sample data in this repository is synthetic or openly licensed. No real patient data.
 
+## The design in two pictures
+
+These diagrams show the design. They are a concept, not a map of finished platform features.
+
+**Training flow.** The parameters define a target cohort and an outcome cohort from the OMOP clinical data. Drugs and conditions become attributes, attributes and demographics become features, the features are joined into a training dataset with the outcome as the label, and a model is trained on it.
+
+![Sequence diagram "Training a model from OMOP data": the user defines parameters (codes, time at risk, observation period); clinical data yields a target cohort and an outcome cohort; cohort attributes are added for drugs and conditions; features are created for drugs, history and demographics in a feature store; the features are joined into a training dataset and the outcome is added as a label; a classification step in AutoML produces the best model, which goes to a model registry.](docs/images/omop-model-training-flow.png)
+
+This repository covers the steps from the parameters to the training dataset (`build_target_cohort`, `build_outcomes`, `build_features`, `build_training_data`) and trains one scikit-learn logistic-regression model (`train_risk_model`). An AutoML search, a feature store and a model registry are not part of it.
+
+**Observation window and time at risk.** Events before the index date, t = 0, become features; the outcome is looked for after t = 0. These are the observation window and time-at-risk parameters of the cohort jobs.
+
+![Timeline diagram "Observation window and time at risk": visits, drugs, measurements and conditions that happen before t = 0 fall in the observation window and become features; after t = 0 the time at risk runs until its end, and the outcome is looked for in it.](docs/images/observation-window-and-time-at-risk.png)
+
 ## Not for clinical use
 
 This is software for research and analytics. It is not a medical device and must not be used to diagnose or treat a patient. Results can be wrong; a qualified person reviews them.
 
 ## Licence
 
-Apache-2.0. See [LICENSE](LICENSE). "Facthory" and the Facthory logo are trademarks of their owner and are not covered by that licence.
+Apache-2.0. See [LICENSE](LICENSE). "Facthory" and the Facthory logo are trademarks of their owner and are not covered by that licence. This includes the logo shown in the images under `docs/images/`.
 
 ## Jobs
 
